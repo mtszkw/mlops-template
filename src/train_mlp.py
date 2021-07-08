@@ -1,11 +1,10 @@
 import sys
 import os
 import json
-import yaml
-import matplotlib.pyplot as plt
+from joblib import dump
 import numpy as np
 from sklearn.neural_network import MLPClassifier
-
+import yaml
 
 def read_prepared_data(data_files_dir: str):
     X_train = np.load(os.path.join(data_files_dir, 'X_train.npy'))
@@ -16,17 +15,17 @@ def read_prepared_data(data_files_dir: str):
  
 
 if __name__ == "__main__":
-    plt.style.use('ggplot')
     params = yaml.safe_load(open('params.yaml'))['train']
 
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 5:
         sys.stderr.write("Arguments error. Usage:\n")
-        sys.stderr.write("\tpython train.py data-files-dir score-json-file plot-json-file\n")
+        sys.stderr.write("\tpython train.py data-files-dir model-bin-file accuracy-json-file loss-history-json-file\n")
         sys.exit(1)
 
-    data_files_dir = sys.argv[1]
-    score_file = sys.argv[2]
-    plot_file = sys.argv[3]
+    data_files_dir      = sys.argv[1]
+    model_bin_file   = sys.argv[2]
+    accuracy_score_file = sys.argv[3]
+    loss_history_file   = sys.argv[4]
     
     (X_train, y_train), (X_test, y_test) = read_prepared_data(data_files_dir)
     
@@ -43,13 +42,14 @@ if __name__ == "__main__":
     
     
     clf.fit(X_train, y_train)
-    
-    with open(score_file, 'w') as f:
+    dump(clf, model_bin_file)
+
+    with open(accuracy_score_file, 'w') as f:
         score = clf.score(X_test, y_test)
         print('Accuracy:', score)
         json.dump({'accuracy': score}, f)
         
-    with open(plot_file, 'w') as f:
+    with open(loss_history_file, 'w') as f:
         loss_history = clf.loss_curve_
         print('Loss curve:', loss_history)
         json.dump({'train': [{'train_loss': l} for l in loss_history]}, f)
